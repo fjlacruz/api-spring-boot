@@ -3,13 +3,12 @@ package com.example.curso.webapp.curso_sb.controllers;
 import com.example.curso.webapp.curso_sb.models.Product;
 import com.example.curso.webapp.curso_sb.services.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.MockBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -26,12 +25,13 @@ public class ProductControllerTest {
   @Autowired
   private ObjectMapper objectMapper;
 
+  private final Product testProduct = new Product("Test Product", 10.0);
+  private final Product newProduct = new Product("New Product", 20.0);
+  private final Product updatedProduct = new Product("Updated Product", 30.0);
+
   @Test
   public void testGetAllProducts_empty() throws Exception {
-    Mockito
-      .when(productService.getAllProducts())
-      .thenReturn(Collections.emptyList());
-
+    Mockito.when(productService.getAllProducts()).thenReturn(List.of());
     mockMvc
       .perform(MockMvcRequestBuilders.get("/api/products"))
       .andExpect(MockMvcResultMatchers.status().isNoContent());
@@ -39,34 +39,39 @@ public class ProductControllerTest {
 
   @Test
   public void testGetAllProducts_nonEmpty() throws Exception {
-    Product product = new Product("Test Product", 10.0);
-    Mockito.when(productService.getAllProducts()).thenReturn(List.of(product));
-
+    Mockito
+      .when(productService.getAllProducts())
+      .thenReturn(List.of(testProduct));
     mockMvc
       .perform(MockMvcRequestBuilders.get("/api/products"))
       .andExpect(MockMvcResultMatchers.status().isOk())
       .andExpect(
-        MockMvcResultMatchers.jsonPath("$[0].name").value("Test Product")
+        MockMvcResultMatchers.jsonPath("$[0].name").value(testProduct.getName())
       )
-      .andExpect(MockMvcResultMatchers.jsonPath("$[0].price").value(10.0));
+      .andExpect(
+        MockMvcResultMatchers
+          .jsonPath("$[0].price")
+          .value(testProduct.getPrice())
+      );
   }
 
   @Test
   public void testGetProductById_found() throws Exception {
-    Product product = new Product("Test Product", 10.0);
-    Mockito.when(productService.getProductById(1L)).thenReturn(product);
-
+    Mockito.when(productService.getProductById(1L)).thenReturn(testProduct);
     mockMvc
       .perform(MockMvcRequestBuilders.get("/api/products/1"))
       .andExpect(MockMvcResultMatchers.status().isOk())
-      .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Test Product"))
-      .andExpect(MockMvcResultMatchers.jsonPath("$.price").value(10.0));
+      .andExpect(
+        MockMvcResultMatchers.jsonPath("$.name").value(testProduct.getName())
+      )
+      .andExpect(
+        MockMvcResultMatchers.jsonPath("$.price").value(testProduct.getPrice())
+      );
   }
 
   @Test
   public void testGetProductById_notFound() throws Exception {
     Mockito.when(productService.getProductById(1L)).thenReturn(null);
-
     mockMvc
       .perform(MockMvcRequestBuilders.get("/api/products/1"))
       .andExpect(MockMvcResultMatchers.status().isNotFound());
@@ -74,26 +79,28 @@ public class ProductControllerTest {
 
   @Test
   public void testCreateProduct() throws Exception {
-    Product product = new Product("New Product", 20.0);
     Mockito
       .when(productService.createProduct(Mockito.any(Product.class)))
-      .thenReturn(product);
+      .thenReturn(newProduct);
 
     mockMvc
       .perform(
         MockMvcRequestBuilders
           .post("/api/products")
           .contentType(MediaType.APPLICATION_JSON)
-          .content(objectMapper.writeValueAsString(product))
+          .content(objectMapper.writeValueAsString(newProduct))
       )
       .andExpect(MockMvcResultMatchers.status().isCreated())
-      .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("New Product"))
-      .andExpect(MockMvcResultMatchers.jsonPath("$.price").value(20.0));
+      .andExpect(
+        MockMvcResultMatchers.jsonPath("$.name").value(newProduct.getName())
+      )
+      .andExpect(
+        MockMvcResultMatchers.jsonPath("$.price").value(newProduct.getPrice())
+      );
   }
 
   @Test
   public void testUpdateProduct_found() throws Exception {
-    Product product = new Product("Updated Product", 30.0);
     Mockito
       .when(
         productService.updateProduct(
@@ -101,25 +108,28 @@ public class ProductControllerTest {
           Mockito.any(Product.class)
         )
       )
-      .thenReturn(product);
+      .thenReturn(updatedProduct);
 
     mockMvc
       .perform(
         MockMvcRequestBuilders
           .put("/api/products/1")
           .contentType(MediaType.APPLICATION_JSON)
-          .content(objectMapper.writeValueAsString(product))
+          .content(objectMapper.writeValueAsString(updatedProduct))
       )
       .andExpect(MockMvcResultMatchers.status().isOk())
       .andExpect(
-        MockMvcResultMatchers.jsonPath("$.name").value("Updated Product")
+        MockMvcResultMatchers.jsonPath("$.name").value(updatedProduct.getName())
       )
-      .andExpect(MockMvcResultMatchers.jsonPath("$.price").value(30.0));
+      .andExpect(
+        MockMvcResultMatchers
+          .jsonPath("$.price")
+          .value(updatedProduct.getPrice())
+      );
   }
 
   @Test
   public void testUpdateProduct_notFound() throws Exception {
-    Product product = new Product("Updated Product", 30.0);
     Mockito
       .when(
         productService.updateProduct(
@@ -134,7 +144,7 @@ public class ProductControllerTest {
         MockMvcRequestBuilders
           .put("/api/products/1")
           .contentType(MediaType.APPLICATION_JSON)
-          .content(objectMapper.writeValueAsString(product))
+          .content(objectMapper.writeValueAsString(updatedProduct))
       )
       .andExpect(MockMvcResultMatchers.status().isNotFound());
   }
